@@ -2,38 +2,60 @@ import streamlit as st
 from textblob import TextBlob
 from PIL import Image, ImageStat
 
-# 1. إعدادات تجعل الواجهة عصرية واحترافية
-st.set_page_config(page_title="Tayeb AI Platform", page_icon="🚀", layout="wide")
+# Professional Page Config
+st.set_page_config(page_title="Tayeb AI Analyzer", page_icon="🤖", layout="wide")
 
-# 2. تصميم القائمة الجانبية الأنيقة (Sidebar)
+# Stylish Sidebar
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/4712/4712035.png", width=100)
-    st.title("Tayeb AI Control")
+    st.image("https://cdn-icons-png.flaticon.com/512/4712/4712035.png", width=80)
+    st.title("AI Control Hub")
     st.markdown("---")
-    st.info("هذه المنصة مدعومة بالذكاء الاصطناعي لتحليل البيانات.")
-    st.write("👤 المطور: **طيب**")
+    st.info("This platform uses Advanced AI to analyze your data.")
+    st.write("👤 Developer: **Tayeb**")
 
-# 3. العنوان الرئيسي
-st.title("🤖 منصة التحليل الذكي الشاملة")
-st.write("اختر الأداة التي تريد استخدامها من الأعلى:")
+# Main Title
+st.title("🤖 Multi-Functional AI Analyzer")
+st.write("Select a tool from the tabs below to start your analysis:")
 
-# 4. إنشاء التبويبات الجميلة (Tabs) للحفاظ على الترتيب
-tab1, tab2, tab3 = st.tabs(["📷 تحليل الصور", "✍️ تحليل النصوص", "📂 معالجة الملفات"])
+# Modern Tabs for Organization
+tab1, tab2, tab3 = st.tabs(["📷 Image Analysis", "✍️ Text Sentiment", "📂 File Processor"])
 
-# --- القسم الأول: الصور ---
+# --- TAB 1: Image Analysis ---
 with tab1:
-    st.subheader("تحليل محتوى الصور")
-    uploaded_img = st.file_uploader("ارفع صورة هنا...", type=['jpg', 'jpeg', 'png'])
+    st.subheader("Image Content Analysis")
+    uploaded_img = st.file_uploader("Upload Image (JPG/PNG)", type=['jpg', 'jpeg', 'png'])
     if uploaded_img:
         col1, col2 = st.columns(2)
         with col1:
             img = Image.open(uploaded_img)
-            st.image(img, caption="الصورة المرفوعة", use_container_width=True)
+            st.image(img, caption="Uploaded Preview", use_container_width=True)
         with col2:
-            if st.button("بدأ تحليل الصورة"):
-                with st.spinner('جاري التحليل...'):
+            if st.button("Run Image AI"):
+                with st.spinner('Processing...'):
                     stat = ImageStat.Stat(img.convert('L'))
-                    res = "إيجابية وواضحة 😊" if stat.stddev[0] > 40 else "متعادلة أو غامضة 😐"
+                    res = "Clear & Vibrant 😊" if stat.stddev[0] > 40 else "Neutral/Dark 😐"
+                    st.success(f"AI Result: {res}")
+
+# --- TAB 2: Text Sentiment ---
+with tab2:
+    st.subheader("Sentiment Analysis Tool")
+    text_input = st.text_area("Enter English text to analyze emotions:")
+    if st.button("Analyze Sentiment"):
+        if text_input:
+            score = TextBlob(text_input).sentiment.polarity
+            if score > 0: st.success(f"Positive Sentiment 😊 (Score: {score:.2f})")
+            elif score < 0: st.error(f"Negative Sentiment 😡 (Score: {score:.2f})")
+            else: st.warning("Neutral Sentiment 😐")
+
+# --- TAB 3: File Processor ---
+with tab3:
+    st.subheader("Text File Processing")
+    uploaded_file = st.file_uploader("Upload a .txt file", type=['txt'])
+    if uploaded_file:
+        if st.button("Read Content"):
+            content = uploaded_file.read().decode("utf-8")
+            st.text_area("File Content:", content, height=200)
+            st.info("File processed successfully!")
                     st.success(f"النتيجة: {res}")
 
 # --- القسم الثاني: النصوص ---
