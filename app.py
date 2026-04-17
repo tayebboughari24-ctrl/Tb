@@ -13,7 +13,7 @@ st.markdown("---")
 
 tab1, tab2, tab3 = st.tabs(["📷 Image Vision", "✍️ Text Analysis", "📂 File Analyzer"])
 
-# --- TAB 1 & 2 (Simple as requested) ---
+# --- TAB 1 & 2 (Simple Results) ---
 with tab1:
     up_img = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key="img_up")
     if up_img:
@@ -29,10 +29,10 @@ with tab2:
         if user_text:
             score = TextBlob(user_text).sentiment.polarity
             if score > 0: st.success("Outcome: Positive 😊")
-            elif score < -0.05: st.error("Outcome: Negative 😡")
+            elif score < 0: st.error("Outcome: Negative 😡")
             else: st.warning("Outcome: Neutral 😐")
 
-# --- TAB 3: File Analyzer (The Accurate Percentage Logic) ---
+# --- TAB 3: File Analyzer (New Accurate Percentage Logic) ---
 with tab3:
     st.subheader("Advanced File Emotion Analytics")
     up_any = st.file_uploader("Upload PDF, Word, or Excel", type=None, key="file_up")
@@ -56,44 +56,42 @@ with tab3:
                 full_text = " ".join(df.astype(str).values.flatten())
 
             if full_text.strip():
-                blob = TextBlob(full_text)
-                # طريقة الحساب الجديدة: تعتمد على قوة القطبية (Subjectivity & Polarity)
-                pol = blob.sentiment.polarity  # من -1 إلى 1
-                subj = blob.sentiment.subjectivity # من 0 إلى 1 (قوة الرأي)
-
-                # معادلة ذكية لتحويل الأرقام الصغيرة إلى نسب مئوية مفهومة
-                if pol > 0:
-                    pos_p = (pol * 100) + (subj * 20) # نرفع النسبة بناءً على قوة الكلمات
+                analysis = TextBlob(full_text).sentiment.polarity
+                
+                # منطق الحساب الجديد (Strict Percentage Mapping)
+                # إذا كانت النتيجة 0.5 (إيجابي) ستتحول إلى 100% إيجابي في عرض النسبة
+                if analysis > 0:
+                    pos_p = analysis * 100
                     neg_p = 0
-                elif pol < 0:
-                    neg_p = (abs(pol) * 100) + (subj * 20)
+                    neu_p = 100 - pos_p
+                elif analysis < 0:
+                    neg_p = abs(analysis) * 100
                     pos_p = 0
+                    neu_p = 100 - neg_p
                 else:
                     pos_p = 0
                     neg_p = 0
-                
-                # التأكد أن المجموع لا يتعدى 100
-                pos_p = min(pos_p, 100)
-                neg_p = min(neg_p, 100)
-                neu_p = 100 - max(pos_p, neg_p)
+                    neu_p = 100
 
                 st.markdown(f"### AI Percentage Report: `{name}`")
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Positive", f"{pos_p:.1f}%")
-                c2.metric("Negative", f"{neg_p:.1f}%")
-                c3.metric("Neutral", f"{neu_p:.1f}%")
                 
-                # شريط تقدم مرئي
-                if pos_p > neg_p:
+                # عرض الأرقام بشكل كبير
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Positive Content", f"{pos_p:.1f}%")
+                col2.metric("Negative Content", f"{neg_p:.1f}%")
+                col3.metric("Neutral Content", f"{neu_p:.1f}%")
+                
+                # شريط تقدم بناءً على النتيجة الغالبة
+                if analysis > 0:
+                    st.write("Overall Progress (Positive Trend):")
                     st.progress(int(pos_p))
-                    st.write(f"Confidence in Positive Sentiment: {pos_p:.1f}%")
-                elif neg_p > pos_p:
+                elif analysis < 0:
+                    st.write("Overall Progress (Negative Trend):")
                     st.progress(int(neg_p))
-                    st.write(f"Confidence in Negative Sentiment: {neg_p:.1f}%")
                 else:
-                    st.progress(int(neu_p))
-                    st.write("Confidence: Neutral Content")
+                    st.write("Overall Progress (Neutral):")
+                    st.progress(100)
 
         except Exception as e:
             st.error(f"Error: {e}")
-                    
+            
