@@ -4,53 +4,37 @@ import PyPDF2
 from docx import Document
 from PIL import Image, ImageStat
 from textblob import TextBlob
-import nltk
-
-# تحميل البيانات اللازمة للتحليل تلقائياً
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-    nltk.download('brown')
-    nltk.download('punkt_tab')
 
 # 1. Page Configuration
 st.set_page_config(page_title="Emotion Analysis", layout="wide", page_icon="📊")
 
-# Header
 st.title("📊 Emotion Analysis")
 st.markdown("---")
 
-# 2. Tabs
 tab1, tab2, tab3 = st.tabs(["📷 Image Vision", "✍️ Text Analysis", "📂 File Analyzer"])
 
-# --- TAB 1: Image (Quick Check) ---
+# --- TAB 1 & 2 (Simple as requested) ---
 with tab1:
-    st.subheader("Visual Tone Detection")
     up_img = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key="img_up")
     if up_img:
         img = Image.open(up_img)
         st.image(img, width=300)
-        if st.button("Check Image"):
-            stat = ImageStat.Stat(img.convert('L'))
-            res = "Positive & Bright" if stat.stddev[0] > 40 else "Neutral/Muted"
-            st.success(f"Result: {res}")
+        stat = ImageStat.Stat(img.convert('L'))
+        res = "Positive & Bright" if stat.stddev[0] > 40 else "Neutral/Muted"
+        st.success(f"Result: {res}")
 
-# --- TAB 2: Text (Quick Check) ---
 with tab2:
-    st.subheader("Quick Text Check")
     user_text = st.text_area("Enter text:", height=150)
     if st.button("Analyze Sentiment"):
         if user_text:
             score = TextBlob(user_text).sentiment.polarity
             if score > 0: st.success("Outcome: Positive 😊")
-            elif score < 0: st.error("Outcome: Negative 😡")
+            elif score < -0.05: st.error("Outcome: Negative 😡")
             else: st.warning("Outcome: Neutral 😐")
 
-# --- TAB 3: File Analyzer (Professional Percentages ONLY here) ---
+# --- TAB 3: File Analyzer (The Accurate Percentage Logic) ---
 with tab3:
     st.subheader("Advanced File Emotion Analytics")
-    st.write("Upload a document to get a detailed percentage-based report.")
     up_any = st.file_uploader("Upload PDF, Word, or Excel", type=None, key="file_up")
     
     if up_any:
@@ -72,28 +56,44 @@ with tab3:
                 full_text = " ".join(df.astype(str).values.flatten())
 
             if full_text.strip():
-                # Analysis Logic
                 blob = TextBlob(full_text)
-                sentences = blob.sentences
-                if len(sentences) > 0:
-                    avg_pol = sum(s.sentiment.polarity for s in sentences) / len(sentences)
-                    
-                    # Convert to percentages
-                    pos_val = max(0, avg_pol * 100) if avg_pol > 0 else 0
-                    neg_val = abs(min(0, avg_pol * 100)) if avg_pol < 0 else 0
-                    neu_val = 100 - (pos_val + neg_val)
+                # طريقة الحساب الجديدة: تعتمد على قوة القطبية (Subjectivity & Polarity)
+                pol = blob.sentiment.polarity  # من -1 إلى 1
+                subj = blob.sentiment.subjectivity # من 0 إلى 1 (قوة الرأي)
 
-                    st.markdown(f"### AI Percentage Report: `{name}`")
-                    
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric("Positive Content", f"{pos_val:.1f}%")
-                    col2.metric("Negative Content", f"{neg_val:.1f}%")
-                    col3.metric("Neutral Content", f"{neu_val:.1f}%")
-                    
-                    st.write("Visual Representation:")
-                    st.progress(int(pos_val))
+                # معادلة ذكية لتحويل الأرقام الصغيرة إلى نسب مئوية مفهومة
+                if pol > 0:
+                    pos_p = (pol * 100) + (subj * 20) # نرفع النسبة بناءً على قوة الكلمات
+                    neg_p = 0
+                elif pol < 0:
+                    neg_p = (abs(pol) * 100) + (subj * 20)
+                    pos_p = 0
                 else:
-                    st.error("Not enough text found in file.")
-        except Exception as e:
-            st.error(f"Analysis Error: {e}")
+                    pos_p = 0
+                    neg_p = 0
                 
+                # التأكد أن المجموع لا يتعدى 100
+                pos_p = min(pos_p, 100)
+                neg_p = min(neg_p, 100)
+                neu_p = 100 - max(pos_p, neg_p)
+
+                st.markdown(f"### AI Percentage Report: `{name}`")
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Positive", f"{pos_p:.1f}%")
+                c2.metric("Negative", f"{neg_p:.1f}%")
+                c3.metric("Neutral", f"{neu_p:.1f}%")
+                
+                # شريط تقدم مرئي
+                if pos_p > neg_p:
+                    st.progress(int(pos_p))
+                    st.write(f"Confidence in Positive Sentiment: {pos_p:.1f}%")
+                elif neg_p > pos_p:
+                    st.progress(int(neg_p))
+                    st.write(f"Confidence in Negative Sentiment: {neg_p:.1f}%")
+                else:
+                    st.progress(int(neu_p))
+                    st.write("Confidence: Neutral Content")
+
+        except Exception as e:
+            st.error(f"Error: {e}")
+                    
