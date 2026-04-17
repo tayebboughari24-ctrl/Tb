@@ -5,72 +5,74 @@ from docx import Document
 from PIL import Image, ImageStat
 from textblob import TextBlob
 
-# 1. إعداد الصفحة
-st.set_page_config(page_title="Tayeb AI Pro", layout="wide")
+# 1. إعداد الاسم والهوية (تعديل الاسم ليظهر بشكل احترافي)
+st.set_page_config(page_title="Solycast AI Platform", layout="wide", page_icon="🌐")
 
-st.title("🤖 Tayeb Multi-AI Platform")
+# تصميم الهيدر
+st.title("🌐 Solycast Intelligence")
+st.markdown("---")
 
-# 2. التبويبات الثلاثة (كما كانت لضمان التنظيم)
-tab1, tab2, tab3 = st.tabs(["📷 Image Tool", "✍️ Text Tool", "📂 Universal File Explorer"])
+# 2. التبويبات المنظمة
+tab1, tab2, tab3 = st.tabs(["📷 Image Analysis", "✍️ Text Sentiment", "📂 Smart File Analyzer"])
 
-# --- التبويب الأول: الصور فقط ---
+# --- التبويب الأول: الصور ---
 with tab1:
-    st.subheader("Image Analysis")
+    st.subheader("Visual Analysis")
     up_img = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key="img_up")
     if up_img:
         img = Image.open(up_img)
         st.image(img, width=300)
-        if st.button("Analyze Image Quality"):
+        if st.button("Analyze Image"):
             stat = ImageStat.Stat(img.convert('L'))
-            res = "Clear 😊" if stat.stddev[0] > 40 else "Low Contrast 😐"
-            st.success(f"Result: {res}")
+            res = "Positive & Bright 😊" if stat.stddev[0] > 40 else "Neutral/Low Light 😐"
+            st.success(f"Visual Result: {res}")
 
-# --- التبويب الثاني: النص المباشر فقط ---
+# --- التبويب الثاني: النص المباشر ---
 with tab2:
-    st.subheader("Direct Text Sentiment")
-    user_text = st.text_area("Type or paste your English text here:", height=150)
-    if st.button("Analyze Sentiment"):
+    st.subheader("Instant Sentiment Check")
+    user_text = st.text_area("Write your text here:", height=150)
+    if st.button("Run AI Analysis"):
         if user_text:
             score = TextBlob(user_text).sentiment.polarity
-            if score > 0: st.success(f"Positive 😊 ({score:.2f})")
-            elif score < 0: st.error(f"Negative 😡 ({score:.2f})")
-            else: st.warning("Neutral 😐")
+            if score > 0: st.success(f"Sentiment: Positive 😊 ({score:.2f})")
+            elif score < 0: st.error(f"Sentiment: Negative 😡 ({score:.2f})")
+            else: st.warning("Sentiment: Neutral 😐")
 
-# --- التبويب الثالث: الملفات الشاملة (هنا التغيير الذكي) ---
+# --- التبويب الثالث: الملفات الشاملة مع التحليل التلقائي ---
 with tab3:
-    st.subheader("Smart File Reader")
-    st.write("Upload any file (PDF, Excel, Word, TXT) and I will read it automatically.")
-    
-    up_any = st.file_uploader("Drop any document here", type=None, key="file_up")
+    st.subheader("Universal Document Analyzer")
+    up_any = st.file_uploader("Upload PDF, Word, or Excel", type=None, key="file_up")
     
     if up_any:
         name = up_any.name
         ext = name.split('.')[-1].lower()
-        st.info(f"File Type Detected: {ext.upper()}")
+        content_text = ""
 
-        # قراءة PDF
+        # استخراج النص بناءً على النوع
         if ext == 'pdf':
             pdf = PyPDF2.PdfReader(up_any)
-            content = "".join([p.extract_text() for p in pdf.pages])
-            st.text_area("PDF Content:", content[:5000], height=300)
-        
-        # قراءة Excel/CSV
-        elif ext in ['xlsx', 'csv', 'xls']:
-            df = pd.read_excel(up_any) if 'xls' in ext else pd.read_csv(up_any)
-            st.dataframe(df)
-            st.success(f"Loaded {len(df)} rows.")
-
-        # قراءة Word
+            content_text = "".join([p.extract_text() for p in pdf.pages])
         elif ext == 'docx':
             doc = Document(up_any)
-            content = "\n".join([p.text for p in doc.paragraphs])
-            st.text_area("Word Content:", content, height=300)
-
-        # قراءة Text
+            content_text = "\n".join([p.text for p in doc.paragraphs])
         elif ext == 'txt':
-            content = up_any.getvalue().decode("utf-8")
-            st.text_area("Text Content:", content, height=300)
+            content_text = up_any.getvalue().decode("utf-8")
+        elif ext in ['xlsx', 'csv']:
+            df = pd.read_excel(up_any) if 'xls' in ext else pd.read_csv(up_any)
+            st.dataframe(df)
+            content_text = " ".join(df.astype(str).values.flatten()[:500]) # تحليل عينة من البيانات
+
+        # إظهار المحتوى + التحليل التلقائي
+        if content_text:
+            st.text_area("File Content Preview:", content_text[:1000], height=200)
+            
+            # زر التحليل الذكي للملف
+            if st.button("Analyze File Sentiment"):
+                analysis = TextBlob(content_text).sentiment.polarity
+                if analysis > 0:
+                    st.success(f"AI Analysis: This file contains POSITIVE content 😊 (Score: {analysis:.2f})")
+                elif analysis < 0:
+                    st.error(f"AI Analysis: This file contains NEGATIVE content 😡 (Score: {analysis:.2f})")
+                else:
+                    st.warning("AI Analysis: This file contains NEUTRAL content 😐")
         
-        else:
-            st.warning("Preview not available for this format, but file is uploaded.")
-    
